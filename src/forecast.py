@@ -20,20 +20,24 @@ def create_df():
     # create dataframe with all OK stations using meteostat
     stations = Stations()
     stations = stations.region('US', 'OK')
-    num_stats = stations.count()
     stations = stations.fetch()
-    stations = stations[(stations["icao"] != "N/A")]
+    exclude = ['KLTS',
+               'KBKN',
+               'KRCE',
+               'KPWA',
+               'N/A']
+    stations = stations[~stations.icao.isin(exclude)]  # these stations cause clutter in map. comment out to see
+    num_stats = len(stations.index)
     return num_stats, stations
 
 
 async def fetch_api(stations, data_q: asyncio.Queue) -> None:
     # separate station coordinates from stations
-    stations_loc = stations[["latitude", "longitude"]]
-
+    coords = stations[["latitude", "longitude"]]
     # fetch data from weather.gov api
     for row, st_id in enumerate(stations["icao"]):
         print(Fore.YELLOW + f"start fetch {st_id}", flush=True)
-        loc = stations_loc.iloc[row]  # lat and lon
+        loc = coords.iloc[row]
         api_req = Forecast(loc)
         forecast = await api_req.get_json()
         forecast = await api_req.get_forecast(forecast)
@@ -54,7 +58,7 @@ async def plot_data(num: int, data_q: asyncio.Queue) -> None:
         arg_loc = await data_q.get()
         arg, loc = arg_loc[0], arg_loc[1]
         lat, lon = loc[["latitude"]], loc[["longitude"]]
-        plt.plot(lon, lat, color="black", marker=f"${arg}°F$", markersize=20)
+        plt.plot(lon, lat, color="black", marker=f"${arg}°$", markersize=20)
         print(Fore.CYAN + f"finish plot {num}", flush=True)
         num -= 1
 
