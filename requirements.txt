@@ -1,0 +1,6 @@
+asyncio==3.4.3
+colorama==0.4.5
+matplotlib==3.6.1
+geopandas==0.11.1
+meteostat==1.6.5
+aiohttp==3.8.3
