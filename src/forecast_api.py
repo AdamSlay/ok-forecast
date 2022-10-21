@@ -4,8 +4,8 @@ from colorama import Fore
 
 class Forecast:
     def __init__(self, loc):
-        self.lat = loc[0]
-        self.lon = loc[1]
+        self.lat = loc[0]  # latitude
+        self.lon = loc[1]  # longitude
 
     async def get_json(self):
         # first api call, gets json which includes forecast url

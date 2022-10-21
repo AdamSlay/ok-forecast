@@ -12,21 +12,20 @@ class Plot:
 
     def init_plot(self):
         # Initialize the plot with the desired styling
+        self.color_map = plt.cm.get_cmap('nipy_spectral')
         self.ax.axes.xaxis.set_visible(False)
         self.ax.axes.yaxis.set_visible(False)
-        ok_map = geopandas.read_file("data/cb_2018_40_bg_500k.shp")
-        ok_map = ok_map.to_crs("epsg:4326")
-        self.ax.set_facecolor("white")
+        self.ax.set_facecolor("#87ceeb")  # trying out sky-blue | default = 'white'
+        ok_map = geopandas.read_file("data/cb_2018_40_bg_500k.shp")  # crs already epsg:4326
         ok_map.plot(ax=self.ax, color="gray")
         plt.title(f"Oklahoma Hourly Temperature (°F)  {self.t_print.replace('-', ', ')}", color="white")
-        self.color_map = plt.cm.get_cmap('nipy_spectral')
 
     def plot_point(self, arg_loc):
         # Plot each point
         arg, loc = arg_loc[0], arg_loc[1]
         lat, lon = loc[["latitude"]], loc[["longitude"]]
         if arg:
-            plt.scatter(lon, lat, c=arg, vmin=-20, vmax=125, cmap=self.color_map, marker=f"${arg}°$", s=250)
+            plt.scatter(lon, lat, c=arg, s=250, vmin=-20, vmax=125, cmap=self.color_map, marker=f"${arg}°$")
 
     def set_colorbar(self):
         # Setup color-bar
