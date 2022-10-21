@@ -1,6 +1,6 @@
 import asyncio
-from colorama import Fore
 import time
+from colorama import Fore
 from datetime import datetime
 from meteostat import Stations
 from forecast_api import Forecast
