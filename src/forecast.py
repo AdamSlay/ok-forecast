@@ -1,11 +1,11 @@
+import asyncio
+import matplotlib.pyplot as plt
 from pathlib import Path
 from colorama import Fore
+from datetime import datetime
 from meteostat import Stations
 from forecast_api import Forecast
 from forecast_plot import Plot
-from datetime import datetime
-import matplotlib.pyplot as plt
-import asyncio
 
 
 async def main() -> int:
