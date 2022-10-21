@@ -9,8 +9,7 @@ class Forecast:
 
     async def get_json(self):
         # first api call, gets json which includes forecast url
-        # this two-step process is per api docs:
-        # <https://weather-gov.github.io/api/general-faqs>
+        # two-step process is per api docs: <https://weather-gov.github.io/api/general-faqs>
         print(Fore.WHITE + 'getting json', flush=True)
         url = f"https://api.weather.gov/points/{self.lat},{self.lon}"
         async with aiohttp.ClientSession() as session:

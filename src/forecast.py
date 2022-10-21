@@ -35,6 +35,7 @@ def create_df():
 async def fetch_api(stations, data_q: asyncio.Queue) -> None:
     # separate station coordinates from stations
     coords = stations[["latitude", "longitude"]]
+
     # fetch data from weather.gov api
     for row, st_id in enumerate(stations["icao"]):
         print(Fore.YELLOW + f"start fetch {st_id}", flush=True)
