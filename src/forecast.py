@@ -1,5 +1,6 @@
 import asyncio
 from colorama import Fore
+import time
 from datetime import datetime
 from meteostat import Stations
 from forecast_api import Forecast
@@ -9,7 +10,7 @@ from forecast_plot import Plot
 async def main() -> int:
     data_q = asyncio.Queue()
     num_stats, stations = create_df()
-    task1 = asyncio.create_task(fetch_api(stations, data_q))
+    task1 = asyncio.create_task(fetch_data(stations, data_q))
     task2 = asyncio.create_task(plot_data(num_stats, data_q))
     await task1, task2
     return 0
@@ -30,7 +31,7 @@ def create_df():
     return num_stats, stations
 
 
-async def fetch_api(stations, data_q: asyncio.Queue) -> None:
+async def fetch_data(stations, data_q: asyncio.Queue) -> None:
     # separate station coordinates from stations
     coords = stations[["latitude", "longitude"]]
 
@@ -45,18 +46,18 @@ async def fetch_api(stations, data_q: asyncio.Queue) -> None:
         print(Fore.YELLOW + f"end fetch {st_id}", flush=True)
 
 
-async def plot_data(num: int, data_q: asyncio.Queue) -> None:
+async def plot_data(num_stats: int, data_q: asyncio.Queue) -> None:
     # Initialize mpl plot with desired styling
-    plot = Plot(t_print)
+    plot = Plot(t_print, t_path)
     plot.init_plot()
 
     # get data from queue and plot
-    while num > 0:
-        print(Fore.CYAN + f"start plot {num}", flush=True)
+    while num_stats > 0:
+        print(Fore.CYAN + f"start plot {num_stats}", flush=True)
         arg_loc = await data_q.get()
         plot.plot_point(arg_loc)
-        print(Fore.CYAN + f"finish plot {num}", flush=True)
-        num -= 1
+        print(Fore.CYAN + f"finish plot {num_stats}", flush=True)
+        num_stats -= 1
 
     # Set up the color-bar, save file, show map
     plot.finish_plot()
@@ -65,7 +66,8 @@ async def plot_data(num: int, data_q: asyncio.Queue) -> None:
 if __name__ == '__main__':
     print(Fore.BLUE + "started", flush=True)
     t0 = datetime.now()  # start_time for benchmark
-    t_print = t0.isoformat(timespec='minutes')  # displayable time
+    t_path = t0.isoformat(timespec='minutes')
+    t_print = time.strftime('%A %B %d, %Y %I:%M %p')  # displayable time
 
     try:
         asyncio.run(main())

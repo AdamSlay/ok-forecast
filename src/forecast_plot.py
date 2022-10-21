@@ -5,10 +5,11 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 class Plot:
-    def __init__(self, t_print):
+    def __init__(self, t_print, t_path):
         self.fig = plt.figure(figsize=(12, 7), facecolor="0.1")
         self.ax = self.fig.add_subplot(111)
         self.t_print = t_print
+        self.t_path = t_path
         self.color_map = None
 
     def init_plot(self):
@@ -33,6 +34,6 @@ class Plot:
         cbax = inset_axes(self.ax, width="3%", height="50%", loc='center left')
         cbar = plt.colorbar(cax=cbax, shrink=.5)
         cbar.set_label("Temperature °F")
-        path = Path(f'maps/ok-hourly-temperature-{self.t_print}.png')
+        path = Path(f'maps/ok-hourly-temperature-{self.t_path}.png')
         plt.savefig(path)
         plt.show()
