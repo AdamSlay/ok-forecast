@@ -26,3 +26,5 @@ class Forecast:
             forecast = await get.json()
         if 'properties' in forecast:
             return forecast['properties']['periods'][0][arg]
+        else:
+            print(Fore.MAGENTA + f"{forecast}", flush=True)

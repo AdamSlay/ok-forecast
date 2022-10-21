@@ -6,12 +6,14 @@ FROM python:3.10
 # add source, destination (. = current dir)
 ADD src/forecast.py .
 ADD src/forecast_api.py .
+ADD src/forecast_plot.py .
 
 # copy source, origin
 COPY requirements.txt .
 
 # copy data
 COPY data /data
+COPY maps /maps
 
 # run command, '--no-cache-dir' to remove install files(*.tar.gz and other such files)
 # this helps keep the image small

@@ -1,9 +1,10 @@
+from pathlib import Path
 from colorama import Fore
 from meteostat import Stations
 from forecast_api import Forecast
+from forecast_plot import Plot
 from datetime import datetime
 import matplotlib.pyplot as plt
-import geopandas
 import asyncio
 
 
@@ -46,32 +47,34 @@ async def fetch_api(stations, data_q: asyncio.Queue) -> None:
 
 
 async def plot_data(num: int, data_q: asyncio.Queue) -> None:
-    # create mpl plot
-    ok_map = geopandas.read_file("data/cb_2018_40_bg_500k.shp")
-    ok_map = ok_map.to_crs("epsg:4326")
-    ok_map.plot(figsize=(12, 6))
-    plt.title("Oklahoma Hourly Temperature (°F)")
+    # Initialize mpl plot with desired styling
+    plot = Plot(t_print)
+    plot.init_plot()
+    path = Path(f'maps/ok-hourly-temperature-{t_print}.png')
 
     # get data from queue and plot
     while num > 0:
         print(Fore.CYAN + f"start plot {num}", flush=True)
         arg_loc = await data_q.get()
-        arg, loc = arg_loc[0], arg_loc[1]
-        lat, lon = loc[["latitude"]], loc[["longitude"]]
-        plt.plot(lon, lat, color="black", marker=f"${arg}°$", markersize=20)
+        plot.plot_point(arg_loc)
         print(Fore.CYAN + f"finish plot {num}", flush=True)
         num -= 1
+
+    # Set up the color-bar, save file, show
+    plot.set_colorbar()
+    plt.savefig(path)
+    plt.show()
 
 
 if __name__ == '__main__':
     print(Fore.BLUE + "started", flush=True)
     t0 = datetime.now()
+    t_print = t0.isoformat(timespec='minutes')
 
     try:
         asyncio.run(main())
-        plt.show()
     except Exception as e:
         print(f"Error in main(): {e}")
-
-    dt = datetime.now() - t0
-    print(Fore.BLUE + f"finished in {dt}", flush=True)
+    finally:
+        dt = datetime.now() - t0
+        print(Fore.BLUE + f"finished in {dt}", flush=True)
