@@ -1,6 +1,4 @@
 import asyncio
-import matplotlib.pyplot as plt
-from pathlib import Path
 from colorama import Fore
 from datetime import datetime
 from meteostat import Stations
@@ -51,7 +49,6 @@ async def plot_data(num: int, data_q: asyncio.Queue) -> None:
     # Initialize mpl plot with desired styling
     plot = Plot(t_print)
     plot.init_plot()
-    path = Path(f'maps/ok-hourly-temperature-{t_print}.png')
 
     # get data from queue and plot
     while num > 0:
@@ -61,21 +58,19 @@ async def plot_data(num: int, data_q: asyncio.Queue) -> None:
         print(Fore.CYAN + f"finish plot {num}", flush=True)
         num -= 1
 
-    # Set up the color-bar, save file, show
-    plot.set_colorbar()
-    plt.savefig(path)
-    plt.show()
+    # Set up the color-bar, save file, show map
+    plot.finish_plot()
 
 
 if __name__ == '__main__':
     print(Fore.BLUE + "started", flush=True)
-    t0 = datetime.now()
-    t_print = t0.isoformat(timespec='minutes')
+    t0 = datetime.now()  # start_time for benchmark
+    t_print = t0.isoformat(timespec='minutes')  # displayable time
 
     try:
         asyncio.run(main())
     except Exception as e:
         print(f"Error in main(): {e}")
     finally:
-        dt = datetime.now() - t0
+        dt = datetime.now() - t0  # elapsed time
         print(Fore.BLUE + f"finished in {dt}", flush=True)
