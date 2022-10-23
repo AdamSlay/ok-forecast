@@ -15,6 +15,12 @@ COPY requirements.txt .
 COPY data /data
 COPY maps /maps
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  libatlas-base-dev \
+  libgdal-dev \
+  gfortran
+
 # run command, '--no-cache-dir' to remove install files(*.tar.gz and other such files)
 # this helps keep the image small
 RUN pip install --no-cache-dir -r requirements.txt
