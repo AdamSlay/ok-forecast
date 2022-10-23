@@ -1,6 +1,7 @@
 import geopandas
 import matplotlib.pyplot as plt
 from pathlib import Path
+from os import mkdir
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
@@ -34,6 +35,10 @@ class Plot:
         cbax = inset_axes(self.ax, width="3%", height="50%", loc='center left')
         cbar = plt.colorbar(cax=cbax, shrink=.5)
         cbar.set_label("Temperature °F")
+	try:
+	    os.mkdir("maps/")
+	except:
+	    pass
         path = Path(f'maps/ok-hourly-temperature-{self.t_path}.png')
         plt.savefig(path)
         plt.show()
