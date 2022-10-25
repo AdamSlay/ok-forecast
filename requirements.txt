@@ -4,3 +4,4 @@ matplotlib==3.6.1
 geopandas==0.11.1
 meteostat==1.6.5
 aiohttp==3.8.3
+pytest==7.1.3
