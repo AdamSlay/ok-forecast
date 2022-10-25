@@ -1,5 +1,5 @@
-import asyncio
 import time
+import asyncio
 from colorama import Fore
 from datetime import datetime
 from meteostat import Stations
@@ -66,7 +66,7 @@ async def plot_data(num_stats: int, data_q: asyncio.Queue) -> None:
 if __name__ == '__main__':
     print(Fore.BLUE + "started", flush=True)
     t0 = datetime.now()  # start_time for benchmark
-    t_path = t0.isoformat(timespec='minutes')
+    t_path = time.strftime('%Y-%m-%d--%H-%M')
     t_print = time.strftime('%A %B %d, %Y %I:%M %p')  # displayable time
 
     try:

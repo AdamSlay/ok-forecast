@@ -3,32 +3,30 @@
 # from image:tag
 FROM python:3.10
 
-# add source, destination (. = current dir)
-ADD src/forecast.py .
-ADD src/forecast_api.py .
-ADD src/forecast_plot.py .
 
 # copy source, origin
 COPY requirements.txt .
 
-# copy data
-COPY data /data
-COPY maps /maps
-
+# get the geopandas requirements from apt before installing with pip
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
   libatlas-base-dev \
   libgdal-dev \
   gfortran
 
+
 # run command, '--no-cache-dir' to remove install files(*.tar.gz and other such files)
 # this helps keep the image small
 RUN pip install --no-cache-dir -r requirements.txt
 
-# CMD to run when the container is opened
-CMD ["python3", "./forecast.py"]
+RUN useradd --create-home forecast-user
+WORKDIR /home/forecast-user
+USER forecast-user
 
-# run the following cmd in the terminal to build this dockerfile:
-# docker build -t python-async .
-# -t gives the build a tag. in this case "python-async"
-# . means build from current directory
+COPY data data/
+COPY src/forecast.py .
+COPY src/forecast_api.py .
+COPY src/forecast_plot.py .
+
+# CMD to run when the container is opened
+CMD ["python3", "forecast.py"]

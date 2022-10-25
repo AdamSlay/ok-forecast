@@ -20,7 +20,7 @@ class Plot:
         self.ax.axes.yaxis.set_visible(False)
         self.ax.set_facecolor("#87ceeb")  # trying out sky-blue | default = 'white'
         ok_map = geopandas.read_file("data/cb_2018_40_bg_500k.shp")  # crs already epsg:4326
-        ok_map.plot(ax=self.ax, color="gray")
+        ok_map.plot(ax=self.ax, color="white")
         plt.title(f"Oklahoma Hourly Temperature (°F)  {self.t_print.replace('-', ', ')}", color="white")
 
     def plot_point(self, arg_loc):
@@ -29,16 +29,20 @@ class Plot:
         lat, lon = loc[["latitude"]], loc[["longitude"]]
         if arg:
             plt.scatter(lon, lat, c=arg, s=250, vmin=-20, vmax=125, cmap=self.color_map, marker=f"${arg}°$")
+        else:
+            plt.scatter(lon, lat, c=120, s=50, vmin=-20, vmax=125, cmap=self.color_map, marker=".")
 
     def finish_plot(self):
         # Setup color-bar
         cbax = inset_axes(self.ax, width="3%", height="50%", loc='center left')
         cbar = plt.colorbar(cax=cbax, shrink=.5)
         cbar.set_label("Temperature °F")
-	try:
-	    os.mkdir("maps/")
-	except:
-	    pass
+        try:
+            mkdir("maps/")
+        except FileExistsError:
+            # Directory already exists
+            pass
+
         path = Path(f'maps/ok-hourly-temperature-{self.t_path}.png')
         plt.savefig(path)
         plt.show()
