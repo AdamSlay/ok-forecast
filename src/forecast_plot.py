@@ -1,4 +1,3 @@
-import geopandas
 import matplotlib.pyplot as plt
 from pathlib import Path
 from os import mkdir
@@ -6,43 +5,55 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 class Plot:
-    def __init__(self, t_print, t_path):
-        self.fig = plt.figure(figsize=(12, 7), facecolor="0.1")
-        self.ax = self.fig.add_subplot(111)
+    def __init__(self, t_print, t_path, arg, figure: int):
+        self.arg = arg
+        self.figure = figure
         self.t_print = t_print
         self.t_path = t_path
-        self.color_map = None
-
-    def init_plot(self):
-        # Initialize the plot with the desired styling
         self.color_map = plt.cm.get_cmap('nipy_spectral')
-        self.ax.axes.xaxis.set_visible(False)
-        self.ax.axes.yaxis.set_visible(False)
-        self.ax.set_facecolor("#87ceeb")  # trying out sky-blue | default = 'white'
-        ok_map = geopandas.read_file("data/cb_2018_40_bg_500k.shp")  # crs already epsg:4326
-        ok_map.plot(ax=self.ax, color="white")
-        plt.title(f"Oklahoma Hourly Temperature (°F)  {self.t_print.replace('-', ', ')}", color="white")
 
-    def plot_point(self, arg_loc):
+    def init_plot(self, state, st_map):
+        # Initialize the plot with the desired styling
+        plt.figure(self.figure, figsize=(10, 10), facecolor="0.7")
+        ax = plt.gca()
+        ax.axes.xaxis.set_visible(False)
+        ax.axes.yaxis.set_visible(False)
+        ax.set_facecolor("#87ceeb")  # trying out sky-blue | default = 'white'
+        st_map.plot(ax=ax, color="white")
+        plt.title(f"{state} Hourly {self.arg}  {self.t_print}")
+
+    def plot_point(self, loc, st_map, arg=None, wdir=None):
         # Plot each point
-        arg, loc = arg_loc[0], arg_loc[1]
-        lat, lon = loc[["latitude"]], loc[["longitude"]]
-        if arg:
-            plt.scatter(lon, lat, c=arg, s=250, vmin=-20, vmax=125, cmap=self.color_map, marker=f"${arg}°$")
-        else:
-            plt.scatter(lon, lat, c=120, s=50, vmin=-20, vmax=125, cmap=self.color_map, marker=".")
+        lon_min, lon_max = float(min(st_map.bounds.minx)), float(max(st_map.bounds.maxx))
+        lat_min, lat_max = float(min(st_map.bounds.miny)), float(max(st_map.bounds.maxy))
+        plt.figure(self.figure)
+        arg = str(arg).split(' ')[0].zfill(2)
+        lat, lon = float(loc[["latitude"]]), float(loc[["longitude"]])
 
-    def finish_plot(self):
+        if lat_max > lat > lat_min and lon_max > lon > lon_min:
+            if arg and not wdir:
+                color_map = plt.cm.get_cmap('nipy_spectral')
+                plt.scatter(lon, lat, c=int(arg), s=200, vmin=-20, vmax=125, cmap=color_map, marker=f"${arg}$")
+
+            elif arg and wdir:
+                color_map = plt.cm.get_cmap('turbo')
+                dir_dict = {'N': '↑', 'S': '↓', 'E': '→', 'W': '←',
+                            'NE': '↗', 'NW': '↖', 'SE': '↘', 'SW': '↙',
+                            'ESE': '↘', 'ENE': '↗', 'NNE': '↗', 'NNW': '↖',
+                            'SSE': '↘', 'SSW': '↙', 'WNW': '↖', 'WSW': '↙'}
+                plt.scatter(lon, lat, c=int(arg), s=250, vmin=0, vmax=70, cmap=color_map,
+                            marker=f"${arg} {dir_dict[wdir]}$")
+
+    async def finish_plot(self, st):
         # Setup color-bar
-        cbax = inset_axes(self.ax, width="3%", height="50%", loc='center left')
-        cbar = plt.colorbar(cax=cbax, shrink=.5)
-        cbar.set_label("Temperature °F")
+        plt.figure(self.figure)
+        cbar = plt.colorbar(shrink=.5)
+        cbar.set_label(f"{self.arg}")
         try:
             mkdir("maps/")
         except FileExistsError:
             # Directory already exists
             pass
-
-        path = Path(f'maps/ok-hourly-temperature-{self.t_path}.png')
+        title = self.arg.replace(' ', '-')
+        path = Path(f'maps/{st}-hourly-{title}-{self.t_path}.png')
         plt.savefig(path)
-        plt.show()

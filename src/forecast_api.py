@@ -15,15 +15,22 @@ class Forecast:
         async with aiohttp.ClientSession() as session:
             get = await session.get(url)
             forecast_url = await get.json()
-            return forecast_url['properties']['forecastHourly']
+            if 'properties' in forecast_url:
+                return forecast_url['properties']['forecastHourly']
 
-    async def get_forecast(self, forecast, arg="temperature"):
+    async def get_forecast(self, forecast_url, arg="temperature"):
         # second api call, gets forecast from forecast url
         print(Fore.WHITE + 'getting forecast', flush=True)
-        async with aiohttp.ClientSession() as session:
-            get = await session.get(forecast)
-            forecast = await get.json()
-        if 'properties' in forecast:
-            return forecast['properties']['periods'][0][arg]
-        else:
-            print(Fore.MAGENTA + f"{forecast}", flush=True)
+        print(forecast_url)
+        if forecast_url:
+            async with aiohttp.ClientSession() as session:
+                get = await session.get(str(forecast_url))
+                forecast = await get.json()
+            if 'properties' in forecast:
+                args = ["temperature",
+                        "windSpeed",
+                        "windDirection"]
+                parms = [forecast['properties']['periods'][0][arg] for arg in args]
+                return parms
+            else:
+                print(Fore.MAGENTA + f"{forecast}", flush=True)
