@@ -1,38 +1,23 @@
 import unittest
-from unittest import mock
-from src.forecast_api import Forecast
-from src.forecast_plot import Plot
 
 
-class Test_Forecast(unittest.TestCase):
-    def test_init(self) -> None:
-        loc = [35, 94]
-        fore = Forecast(loc)
-        assert fore.lat == loc[0]
-        assert fore.lon == loc[1]
-        pass
-
-    # @mock.patch()
-    # def test_get_json(self):
-    #    pass
-
-
-class Test_Plot(unittest.TestCase):
-    def test_init(self) -> None:
-        t_path = "2022-10-24--11-59"
-        t_print = "Monday October 24, 2022 11:59 AM"
-        plot = Plot(t_print, t_path)
-        assert plot.t_path == t_path
-        assert plot.t_print == t_print
-
-
+# Question: is the correct dataframe/number of stations being returned?
+# Tests:
+# 1. mock the stations variable and see if it returns the correct number of stations
+# 2. does it properly exclude stations with 'N/A' in the 'icao' column?
 def test_create_df():
     pass
 
 
+# Question: Does the correct data get fetched and put into the Queue?
+# Tests:
+# 1. IDK
 def test_fetch_data():
     pass
 
 
+# Question: Is the data being retrieved from the Queue and plotted correctly?
+# Tests:
+# 1. IDK
 def test_plot_data():
     pass

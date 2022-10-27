@@ -5,17 +5,17 @@ from os import mkdir
 
 
 class Plot:
-    def __init__(self, t_print: str, t_path: str, arg_str: str, figure: int) -> None:
+    def __init__(self, t_print: str, t_path: str, arg_str: str, fig_id: int) -> None:
         self.t_print = t_print
         self.t_path = t_path
         self.arg_str = arg_str
-        self.figure = figure
-        self.color_map = plt.cm.get_cmap('nipy_spectral')
+        self.fig_id = fig_id
+        self.color_map = None
 
     def init_plot(self, state, st_map):
         # Initialize the plot with the desired styling
         try:
-            plt.figure(self.figure, figsize=(10, 8), facecolor="0.7")
+            plt.figure(self.fig_id, figsize=(10, 8), facecolor="0.6")
             ax = plt.gca()
             ax.axes.xaxis.set_visible(False)
             ax.axes.yaxis.set_visible(False)
@@ -28,7 +28,7 @@ class Plot:
     def plot_point(self, loc, st_map, arg_val=None, wdir=None):
         # Plot each point
         try:
-            plt.figure(self.figure)
+            plt.figure(self.fig_id)
             arg_val = str(arg_val).split(' ')[0].zfill(2)  # add leading 0 to make all markers same size
             lon_min, lon_max = float(min(st_map.bounds.minx)), float(max(st_map.bounds.maxx))  # longitude range
             lat_min, lat_max = float(min(st_map.bounds.miny)), float(max(st_map.bounds.maxy))  # latitude range
@@ -54,7 +54,7 @@ class Plot:
     async def finish_plot(self, state_abv):
         try:
             # Setup color-bar
-            plt.figure(self.figure)
+            plt.figure(self.fig_id)
             cbar = plt.colorbar(shrink=.5)
             cbar.set_label(f"{self.arg_str}")
 

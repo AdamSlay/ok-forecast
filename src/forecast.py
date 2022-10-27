@@ -51,12 +51,8 @@ def create_df(state_abv: str):
     stations = Stations()
     stations = stations.region('US', state_abv)
     stations = stations.fetch()
-    exclude = ['KLTS',
-               'KBKN',
-               'KRCE',
-               'KPWA',
-               'N/A']
-    stations = stations[~stations.icao.isin(exclude)]  # these stations cause clutter in map. comment out to see
+    exclude = ['N/A']
+    stations = stations[~stations.icao.isin(exclude)]  # exclude invalid stations
     num_stats = len(stations.index)
     return num_stats, stations
 
