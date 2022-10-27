@@ -7,63 +7,49 @@ from meteostat import Stations
 from forecast_api import Forecast
 from forecast_plot import Plot
 
-# State and abbreviation
-state_abv = {
-    "Alabama": "AL", "Arizona": "AZ", "Arkansas": "AR", "California": "CA",
-    "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE", "Florida": "FL", "Georgia": "GA",
-    "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS",
-    "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD", "Massachusetts": "MA",
-    "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS", "Missouri": "MO", "Montana": "MT",
-    "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM",
-    "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK",
-    "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC",
-    "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT",
-    "Virginia": "VA", "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY",
-}
-state_fp_codes = {
-    'WA': '53', 'DE': '10', 'DC': '11', 'WI': '55', 'WV': '54', 'HI': '15',
-    'FL': '12', 'WY': '56', 'PR': '72', 'NJ': '34', 'NM': '35', 'TX': '48',
-    'LA': '22', 'NC': '37', 'ND': '38', 'NE': '31', 'TN': '47', 'NY': '36',
-    'PA': '42', 'AK': '02', 'NV': '32', 'NH': '33', 'VA': '51', 'CO': '08',
-    'CA': '06', 'AL': '01', 'AR': '05', 'VT': '50', 'IL': '17', 'GA': '13',
-    'IN': '18', 'IA': '19', 'MA': '25', 'AZ': '04', 'ID': '16', 'CT': '09',
-    'ME': '23', 'MD': '24', 'OK': '40', 'OH': '39', 'UT': '49', 'MO': '29',
-    'MN': '27', 'MI': '26', 'RI': '44', 'KS': '20', 'MT': '30', 'MS': '28',
-    'SC': '45', 'KY': '21', 'OR': '41', 'SD': '46'
-}
+# State, Abbreviation, FP code
+us_states = [
+    ["Alabama", "AL", "01"], ["Arizona", "AZ", "04"], ["Arkansas", "AR", "05"], ["California", "CA", "06"],
+    ["Colorado", "CO", "08"], ["Connecticut", "CT", "09"], ["Delaware", "DE", "10"], ["Florida", "FL", "12"],
+    ["Georgia", "GA", "13"], ["Idaho", "ID", "16"], ["Illinois", "IL", "17"], ["Indiana", "IN", "18"],
+    ["Iowa", "IA", "19"], ["Kansas", "KS", "20"], ["Kentucky", "KY", "21"], ["Louisiana", "LA", "22"],
+    ["Maine", "ME", "23"], ["Maryland", "MD", "24"], ["Massachusetts", "MA", "25"], ["Michigan", "MI", "26"],
+    ["Minnesota", "MN", "27"], ["Mississippi", "MS", "28"], ["Missouri", "MO", "29"], ["Montana", "MT", "30"],
+    ["Nebraska", "NE", "31"], ["Nevada", "NV", "32"], ["New Hampshire", "NH", "33"], ["New Jersey", "NJ", "34"],
+    ["New Mexico", "NM", "35"], ["New York", "NY", "36"], ["North Carolina", "NC", "37"], ["North Dakota", "ND", "38"],
+    ["Ohio", "OH", "39"], ["Oklahoma", "OK", "40"], ["Oregon", "OR", "41"], ["Pennsylvania", "PA", "42"],
+    ["Rhode Island", "RI", "44"], ["South Carolina", "SC", "45"], ["South Dakota", "SD", "46"],
+    ["Tennessee", "TN", "47"], ["Texas", "TX", "48"], ["Utah", "UT", "49"], ["Vermont", "VT", "50"],
+    ["Virginia", "VA", "51"], ["Washington", "WA", "53"], ["West Virginia", "WV", "54"], ["Wisconsin", "WI", "55"],
+    ["Wyoming", "WY", "56"],
+]
 
-us_states = ['Alabama', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Florida',
-             'Georgia', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland',
-             'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
-             'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
-             'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee',
-             'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming']
-
-us_map = geopandas.read_file("data/states/cb_2018_us_county_500k.shp")  # crs already epsg:4326
+# Only load the full map once
+us_map = geopandas.read_file("data/cb_2018_us_county_500k.shp")  # crs already epsg:4326
 
 
 async def main() -> int:
-    await asyncio.gather(*map(wait, us_states))
-    # for state, st in state_abv.items():
-    #   await wait(state, st, us_map, fig_id)
+    await asyncio.gather(*map(loop, us_states))
     return 0
 
 
-async def wait(state):
-    st = state_abv[state]
-    fig_id = state_fp_codes[st]
+async def loop(state: list) -> None:
+    # main loop for each state
+    state_abv = state[1]
+    state_fp = state[2]
+    st_map = us_map[us_map["STATEFP"] == state_fp]
+    num_stats, stations = create_df(state_abv)
+
     data_q = asyncio.Queue()
-    st_map = us_map[us_map["STATEFP"] == state_fp_codes[st]]
-    num_stats, stations = create_df(st)
-    task1 = asyncio.create_task(fetch_data(stations, data_q))
-    task2 = asyncio.create_task(plot_data(num_stats, fig_id, state, st, st_map, data_q))
-    await task1, task2
+    task_1 = asyncio.create_task(fetch_data(stations, data_q))
+    task_2 = asyncio.create_task(plot_data(num_stats, state, st_map, data_q))
+    await task_1, task_2
 
 
-def create_df(st):
-    # create dataframe with all OK stations using meteostat
+def create_df(state_abv: str):
+    # create dataframe with all stations in state using meteostat
     stations = Stations()
-    stations = stations.region('US', st)
+    stations = stations.region('US', state_abv)
     stations = stations.fetch()
     exclude = ['KLTS',
                'KBKN',
@@ -79,51 +65,53 @@ async def fetch_data(stations, data_q: asyncio.Queue) -> None:
     # separate station coordinates from stations
     coords = stations[["latitude", "longitude"]]
 
-    # fetch data from weather.gov api
+    # fetch data from weather.gov api and put in Queue
     for row, st_id in enumerate(stations["icao"]):
-        print(Fore.YELLOW + f"start fetch {st_id}", flush=True)
         loc = coords.iloc[row]
         api_req = Forecast(loc)
         forecast_url = await api_req.get_json()
-        forecast = await api_req.get_forecast(forecast_url)
-        await data_q.put([forecast, loc])
-        print(Fore.YELLOW + f"end fetch {st_id}", flush=True)
+        forecast_args = await api_req.get_forecast(forecast_url)
+        await data_q.put([forecast_args, loc])
 
 
-async def plot_data(num_stats: int, fig_id, state, st, st_map, data_q: asyncio.Queue) -> None:
+async def plot_data(num_stats: int, state: list, st_map, data_q: asyncio.Queue) -> None:
+    state_full = state[0]
+    state_abv = state[1]
+    fig_id = state[2]
+
     # Initialize mpl plot with desired styling
     temp_plot = Plot(t_print, t_path, "Temperature (F)", fig_id)
-    temp_plot.init_plot(state, st_map)
-    wind_plot = Plot(t_print, t_path, "Wind Speed (mph)", fig_id * 3)
-    wind_plot.init_plot(state, st_map)
+    wind_plot = Plot(t_print, t_path, "Wind Speed (mph)", fig_id * 100)  # * 100 to make a second unique ID
+    temp_plot.init_plot(state_full, st_map)
+    wind_plot.init_plot(state_full, st_map)
 
-    # get data from queue and plot
+    # get data from Queue and plot each point
     while num_stats > 0:
-        print(Fore.CYAN + f"start plot {num_stats}", flush=True)
-        args_loc = await data_q.get()
-        loc = args_loc[1]
+        print(Fore.CYAN + f"{state_abv} - start plot {num_stats}", flush=True)
+        args_loc = await data_q.get()  # gets [forecast_args, loc] from fetch_data()
         args = args_loc[0]
+        loc = args_loc[1]
         if args:
             temp_plot.plot_point(loc, st_map, args[0])
             wind_plot.plot_point(loc, st_map, args[1], args[2])
-        print(Fore.CYAN + f"finish plot {num_stats}", flush=True)
+        print(Fore.CYAN + f"{state_abv} - finish plot {num_stats}", flush=True)
         num_stats -= 1
 
-    # Set up the color-bar, save file, show map
-    await temp_plot.finish_plot(st)
-    await wind_plot.finish_plot(st)
+    # Set up color-bar, save figs to /maps
+    await temp_plot.finish_plot(state_abv)
+    await wind_plot.finish_plot(state_abv)
 
 
 if __name__ == '__main__':
     print(Fore.BLUE + "started", flush=True)
     t0 = datetime.now()  # start_time for benchmark
     t_path = time.strftime('%Y-%m-%d--%H-%M')
-    t_print = time.strftime('%A %B %d, %Y %I:%M %p')  # displayable time
+    t_print = time.strftime('%a %B %d, %Y %H:%M')  # displayable time
 
     try:
         asyncio.run(main())
     except Exception as e:
-        print(f"Error in main(): {e}")
+        print(f"Unexpected Error in main(): {e}")
     finally:
         dt = datetime.now() - t0  # elapsed time
         print(Fore.BLUE + f"finished in {dt}", flush=True)
