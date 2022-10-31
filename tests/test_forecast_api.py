@@ -49,15 +49,6 @@ async def test_get_json(mock_get):
 
 
 @pytest.mark.asyncio
-async def test_get_json(mock_get):
-    mock_data = json.load(open('tests/test_data/mock_get_json_resp.json'))
-    resp = MockClientSession(mock_data, 200)
-    f = f_api.Forecast([39.2187, -75.6005])
-    mock_get.return_value = resp
-    task_1 = await f.get_json()
-
-
-@pytest.mark.asyncio
 async def test_get_json_fail(mock_get):
     with pytest.raises(Exception):
         mock_data = "hello"
