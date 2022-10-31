@@ -1,12 +1,14 @@
 import time
 import asyncio
-import geopandas
+import pandas as pd
+import geopandas as gpd
 from colorama import Fore
 from datetime import datetime
 from meteostat import Stations
 from forecast_api import Forecast
 from forecast_plot import Plot
 
+test_state = [["Delaware", "DE", "10"]]
 # State, Abbreviation, FP code
 us_states = [
     ["Alabama", "AL", "01"], ["Arizona", "AZ", "04"], ["Arkansas", "AR", "05"], ["California", "CA", "06"],
@@ -25,7 +27,7 @@ us_states = [
 ]
 
 # Only load the full map once
-us_map = geopandas.read_file("data/cb_2018_us_county_500k.shp")  # crs already epsg:4326
+us_map = gpd.read_file("data/cb_2018_us_county_500k.shp")  # crs already epsg:4326
 
 
 async def main() -> int:
@@ -46,18 +48,21 @@ async def loop(state: list) -> None:
     await task_1, task_2
 
 
-def create_df(state_abv: str):
+def create_df(state_abv: str) -> (int, pd.DataFrame):
     # create dataframe with all stations in state using meteostat
-    stations = Stations()
-    stations = stations.region('US', state_abv)
-    stations = stations.fetch()
-    exclude = ['N/A']
-    stations = stations[~stations.icao.isin(exclude)]  # exclude invalid stations
-    num_stats = len(stations.index)
-    return num_stats, stations
+    try:
+        stations = Stations()
+        stations = stations.region('US', state_abv)
+        stations = stations.fetch()
+        exclude = ['N/A']
+        stations = stations[~stations.icao.isin(exclude)]  # exclude invalid stations
+        num_stats = len(stations.index)
+        return num_stats, stations
+    except Exception as e:
+        print(Fore.RED + f"Error in create_df while working on {state_abv}: {e}")
 
 
-async def fetch_data(stations, data_q: asyncio.Queue) -> None:
+async def fetch_data(stations: pd.DataFrame, data_q: asyncio.Queue) -> None:
     # separate station coordinates from stations
     coords = stations[["latitude", "longitude"]]
 
@@ -66,11 +71,14 @@ async def fetch_data(stations, data_q: asyncio.Queue) -> None:
         loc = coords.iloc[row]
         api_req = Forecast(loc)
         forecast_url = await api_req.get_json()
-        forecast_args = await api_req.get_forecast(forecast_url)
-        await data_q.put([forecast_args, loc])
+        if forecast_url:
+            forecast_args = await api_req.get_forecast(forecast_url)
+            await data_q.put([forecast_args, loc])
+        else:
+            await data_q.put([None, loc])
 
 
-async def plot_data(num_stats: int, state: list, st_map, data_q: asyncio.Queue) -> None:
+async def plot_data(num_stats: int, state: list, st_map: gpd.GeoDataFrame, data_q: asyncio.Queue) -> None:
     state_full = state[0]
     state_abv = state[1]
     fig_id = state[2]
@@ -90,6 +98,9 @@ async def plot_data(num_stats: int, state: list, st_map, data_q: asyncio.Queue) 
         if args:
             temp_plot.plot_point(loc, st_map, args[0])
             wind_plot.plot_point(loc, st_map, args[1], args[2])
+        else:
+            temp_plot.plot_null_point(loc, st_map)
+            wind_plot.plot_null_point(loc, st_map)
         print(Fore.CYAN + f"{state_abv} - finish plot {num_stats}", flush=True)
         num_stats -= 1
 
@@ -106,8 +117,8 @@ if __name__ == '__main__':
 
     try:
         asyncio.run(main())
-    except Exception as e:
-        print(f"Unexpected Error in main(): {e}")
+    except Exception as exception:
+        print(f"Unexpected Error in main(): {exception}")
     finally:
         dt = datetime.now() - t0  # elapsed time
         print(Fore.BLUE + f"finished in {dt}", flush=True)

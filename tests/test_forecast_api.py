@@ -1,28 +1,107 @@
-import unittest
-from src.forecast_api import Forecast
+from src import forecast_api as f_api
+from unittest.mock import AsyncMock
+import pytest
+import json
 
 
-class Test_Forecast(unittest.TestCase):
+def test_init() -> None:
+    loc = [35, 94]
+    fore = f_api.Forecast(loc)
+    assert fore.lat == loc[0]
+    assert fore.lon == loc[1]
 
-    # Question: Does the class init with the proper values?
-    def test_init(self) -> None:
-        loc = [35, 94]
-        fore = Forecast(loc)
-        assert fore.lat == loc[0]
-        assert fore.lon == loc[1]
 
-    # Question: Is the correct forecast_url being returned?
-    # Tests:
-    # 1. patch the 'get' variable with a get response, then make sure the right forecast_url is extracted from the json
-    # 2. does it properly recognize an invalid get response?
-    # 3. does it properly recognize when a valid get response does not have a forecast_url?
-    def test_get_json(self):
+class MockClientSession:
+    # this is a class that mocks the return value of aiohttp.ClientSession.get
+    def __init__(self, text, status):
+        self.text = text
+        self.status = status
+
+    async def text(self):
+        return self.text
+
+    async def json(self):
+        # had to throw a json() method in there because it is called in the function that's being tested
+        return self.text
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    # Question: Are the correct forecast parms being returned?
-    # Tests:
-    # 1. patch 'get' variable with get response, then make sure the right forecast data is being extracted from the json
-    # 2. does it properly recognize an invalid get response?
-    # 3. does it properly recognize when a valid response does not have the desired parms?
-    def test_get_forecast(self):
-        pass
+    async def __aenter__(self):
+        return self
+
+
+@pytest.fixture()
+def mock_get(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('src.forecast_api.aiohttp.ClientSession.get', side_effect=async_mock)
+    return async_mock
+
+
+@pytest.mark.asyncio
+async def test_get_json(mock_get):
+    mock_data = json.load(open('tests/test_data/mock_get_json_resp.json'))
+    resp = MockClientSession(mock_data, 200)
+    f = f_api.Forecast([39.2187, -75.6005])
+    mock_get.return_value = resp
+    task_1 = await f.get_json()
+    assert task_1 == 'https://api.weather.gov/gridpoints/PHI/38,40/forecast/hourly'
+
+
+@pytest.mark.asyncio
+async def test_get_json(mock_get):
+    mock_data = json.load(open('tests/test_data/mock_get_json_resp.json'))
+    resp = MockClientSession(mock_data, 200)
+    f = f_api.Forecast([39.2187, -75.6005])
+    mock_get.return_value = resp
+    task_1 = await f.get_json()
+
+
+@pytest.mark.asyncio
+async def test_get_json_fail(mock_get):
+    with pytest.raises(Exception):
+        mock_data = "hello"
+        resp = MockClientSession(mock_data, 200)
+        f = f_api.Forecast([39.2187, -75.6005])
+        mock_get.return_value = resp.text
+        await f.get_json()
+
+
+@pytest.mark.asyncio
+async def test_get_json_none(mock_get):
+    mock_data = {}  # empty json response
+    resp = MockClientSession(mock_data, 200)
+    f = f_api.Forecast([39.2187, -75.6005])
+    mock_get.return_value = resp
+    task_1 = await f.get_json()
+    assert task_1 is None
+
+
+@pytest.mark.asyncio
+async def test_get_forecast(mock_get):
+    p = json.load(open('tests/test_data/mock_get_forecast_resp.json'))
+    resp = MockClientSession(p, 200)
+    f = f_api.Forecast([39.2187, -75.6005])
+    mock_get.return_value = resp
+    task_1 = await f.get_forecast("url")
+    assert task_1 == [58, "5 mph", "S"]
+
+
+@pytest.mark.asyncio
+async def test_get_forecast_none(mock_get):
+    mock_data = {}  # empty json response
+    resp = MockClientSession(mock_data, 200)
+    f = f_api.Forecast([39.2187, -75.6005])
+    mock_get.return_value = resp
+    task_1 = await f.get_forecast("url")
+    assert task_1 is None
+
+
+@pytest.mark.asyncio
+async def test_get_forecast_fail(mock_get):
+    with pytest.raises(Exception):
+        mock_data = "hello"
+        resp = MockClientSession(mock_data, 200)
+        f = f_api.Forecast([39.2187, -75.6005])
+        mock_get.return_value = resp.text
+        await f.get_forecast("url")
