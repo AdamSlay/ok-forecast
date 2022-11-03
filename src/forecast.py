@@ -1,10 +1,13 @@
 import time
 import asyncio
+import aiohttp
 import pandas as pd
 import geopandas as gpd
+
 from colorama import Fore
 from datetime import datetime
 from meteostat import Stations
+
 from forecast_api import Forecast
 from forecast_plot import Plot
 
@@ -67,25 +70,24 @@ async def fetch_data(stations: pd.DataFrame, data_q: asyncio.Queue) -> None:
     coords = stations[["latitude", "longitude"]]
 
     # fetch data from weather.gov api and put in Queue
-    for row, st_id in enumerate(stations["icao"]):
-        loc = coords.iloc[row]
-        api_req = Forecast(loc)
-        forecast_url = await api_req.get_json()
-        if forecast_url:
-            forecast_args = await api_req.get_forecast(forecast_url)
-            await data_q.put([forecast_args, loc])
-        else:
-            await data_q.put([None, loc])
+    async with aiohttp.ClientSession(trust_env=True) as session:
+        for row, st_id in enumerate(stations["icao"]):
+            loc = coords.iloc[row]
+            api_req = Forecast(loc, session)
+            forecast_url = await api_req.get_json()
+            if forecast_url:
+                forecast_args = await api_req.get_forecast(forecast_url)
+                await data_q.put([forecast_args, loc])
+            else:
+                await data_q.put([None, loc])
 
 
 async def plot_data(num_stats: int, state: list, st_map: gpd.GeoDataFrame, data_q: asyncio.Queue) -> None:
-    state_full = state[0]
-    state_abv = state[1]
-    fig_id = state[2]
+    state_full, state_abv, fig_id = state[0], state[1], state[2]
 
     # Initialize mpl plot with desired styling
     temp_plot = Plot(t_print, t_path, "Temperature (F)", fig_id)
-    wind_plot = Plot(t_print, t_path, "Wind Speed (mph)", fig_id * 100)  # * 100 to make a second unique ID
+    wind_plot = Plot(t_print, t_path, "Wind Speed (mph)", fig_id * 2)  # '* 2' to make a second unique figure ID
     temp_plot.init_plot(state_full, st_map)
     wind_plot.init_plot(state_full, st_map)
 
@@ -93,8 +95,7 @@ async def plot_data(num_stats: int, state: list, st_map: gpd.GeoDataFrame, data_
     while num_stats > 0:
         print(Fore.CYAN + f"{state_abv} - start plot {num_stats}", flush=True)
         args_loc = await data_q.get()  # gets [forecast_args, loc] from fetch_data()
-        args = args_loc[0]
-        loc = args_loc[1]
+        args, loc = args_loc[0], args_loc[1]
         if args:
             temp_plot.plot_point(loc, st_map, args[0])
             wind_plot.plot_point(loc, st_map, args[1], args[2])

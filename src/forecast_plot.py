@@ -50,7 +50,7 @@ class Plot:
         except Exception as e:
             print(Fore.RED + f"Error in plot_point while working on {self.fig_id}: {e}", flush=True)
 
-    def plot_null_point(self, loc, st_map):
+    def plot_null_point(self, loc, st_map) -> None:
         # If there is no arg data, simply plot a red dot at the station location
         try:
             plt.figure(self.fig_id)
@@ -83,7 +83,7 @@ class Plot:
             except FileExistsError:
                 # Directory already exists
                 pass
-            title = self.arg_str[:4]  # first 4 of Arg: 'Temp' or 'Wind'
+            title = self.arg_str[:4]  # first 4 chars of Arg: 'Temp' or 'Wind'
             path = Path(f'maps/{state_abv}-hourly-{title}-{self.t_path}.png')
             plt.savefig(path)
             plt.close()
